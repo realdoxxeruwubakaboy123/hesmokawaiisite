@@ -611,12 +611,42 @@
             }
         }
 
-        // hier nigga die aufrufe 
+        // hier die Aufrufe
         const viewCountEl = document.getElementById('view-count');
-        let viewCount = 0;
+        const STORAGE_KEY = 'hesmoViewCount';
+        const STORAGE_TS_KEY = 'hesmoViewCountTs';
+        let viewCount = 754;
 
         function formatCount(value) {
             return value.toLocaleString('de-DE');
+        }
+
+        function loadSavedViewCount() {
+            const savedCount = parseInt(localStorage.getItem(STORAGE_KEY), 10);
+            const savedTs = parseInt(localStorage.getItem(STORAGE_TS_KEY), 10);
+
+            if (!Number.isNaN(savedCount) && savedCount >= 754) {
+                viewCount = savedCount;
+            }
+
+            if (!Number.isNaN(savedTs)) {
+                const elapsedMs = Date.now() - savedTs;
+                if (elapsedMs > 60000) {
+                    viewCount += simulateMissedVisits(elapsedMs);
+                }
+            }
+        }
+
+        function saveViewCount() {
+            localStorage.setItem(STORAGE_KEY, viewCount);
+            localStorage.setItem(STORAGE_TS_KEY, Date.now());
+        }
+
+        function simulateMissedVisits(elapsedMs) {
+            const averagePerHour = 60;
+            const expected = (elapsedMs / 3600000) * averagePerHour;
+            const jitter = expected * (Math.random() * 0.4 - 0.2);
+            return Math.max(0, Math.round(expected + jitter));
         }
 
         function getRandomVisitTarget() {
@@ -632,11 +662,14 @@
             window.setTimeout(() => {
                 viewCount += 1;
                 viewCountEl.textContent = formatCount(viewCount);
+                saveViewCount();
                 scheduleNextVisit();
             }, nextDelay);
         }
 
+        loadSavedViewCount();
         viewCountEl.textContent = formatCount(viewCount);
+        saveViewCount();
         scheduleNextVisit();
     </script>
 </body>
